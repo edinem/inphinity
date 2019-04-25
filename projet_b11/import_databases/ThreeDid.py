@@ -1,8 +1,12 @@
-import requests
 import gzip
 import shutil
-import os
 import subprocess
+
+import mysql
+import requests
+
+from projet_b11.import_databases.Domain_Interaction import DomainInteraction
+
 
 class ThreeDid:
 
@@ -18,6 +22,23 @@ class ThreeDid:
 
     def __init__(self):
         self.version = None
+        self.db_cursor = None
+        self.db_connection = None
+        self.domain_interactions = set()
+        self.init_mysql_connection()
+
+    # initializes the mysql connection or raises an exception
+    def init_mysql_connection(self):
+        try:
+            self.db_connection = mysql.connector.connect(user='root', host='localhost')
+            self.db_cursor = self.db_connection.cursor()
+        except mysql.connector.Error as e:
+            print("Connexion à la base de données MySQL impossible.")
+            raise e
+
+    def close_mysql_connection(self):
+        self.db_connection.close()
+        self.db_cursor.close()
 
     # fetch the database version
     def fetch_version(self):
@@ -29,26 +50,27 @@ class ThreeDid:
         open(ThreeDid.archive_filename, 'wb').write(archive.content)
 
     # extract compressed SQL file
-    def extract_sql(self):
+    def extract_archive(self):
         with gzip.open(ThreeDid.archive_filename, 'rb') as f_in:
             with open(ThreeDid.sql_filename, 'wb') as f_out:
                 shutil.copyfileobj(f_in, f_out)
 
     # import database into mysql
     # db_cursor: opened database connection
-    def import_db(self, db_cursor):
+    def import_sql(self):
 
         # recreate database
-        db_cursor.execute('drop database if exists 3did')
-        db_cursor.execute('create database 3did')
+        self.db_cursor.execute('drop database if exists 3did')
+        self.db_cursor.execute('create database 3did')
 
         # import downloaded database
         out = subprocess.check_output(['mysql', '-u', 'root', '--show-warnings', '-e', 'use 3did; source ' + ThreeDid.sql_filename + ';'])
         print(out.decode())
 
-    def print_ddi(self, db_cursor):
+    # creates DomainInteraction instances and adds them to the domain_interactions set
+    def get_interactions(self):
 
-        db_cursor.execute('use 3did')
+        self.db_cursor.execute('use 3did')
 
         sql = """select substring_index(d1.pfam_id, '.', 1),
                         substring_index(d2.pfam_id, '.', 1)
@@ -58,6 +80,8 @@ class ThreeDid:
                   inner join domain d2
                      on ddi1.domain2 = d2.name;"""
 
-        db_cursor.execute(sql)
-        for d1, d2 in db_cursor.fetchall():
-            print('Domaine 1 : {}, domaine 2 : {}'.format(d1, d2))
+        self.db_cursor.execute(sql)
+        for d1, d2 in self.db_cursor.fetchall():
+            self.domain_interactions.add(DomainInteraction(d1, d2))
+
+        self.close_mysql_connection()
