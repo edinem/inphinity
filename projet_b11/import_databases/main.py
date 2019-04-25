@@ -1,8 +1,4 @@
-import mysql.connector
-
 from projet_b11.import_databases.ThreeDid import ThreeDid
-
-
 
 did = ThreeDid()
 

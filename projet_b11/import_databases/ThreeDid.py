@@ -6,6 +6,7 @@ import mysql
 import requests
 
 from projet_b11.import_databases.Domain_Interaction import DomainInteraction
+from projet_b11.import_databases.MySQLConfiguration import MySQLConfiguration
 
 
 class ThreeDid:
@@ -30,7 +31,8 @@ class ThreeDid:
     # initializes the mysql connection or raises an exception
     def init_mysql_connection(self):
         try:
-            self.db_connection = mysql.connector.connect(user='root', host='localhost')
+            config = MySQLConfiguration()
+            self.db_connection = mysql.connector.connect(user=config.user, host=config.host)
             self.db_cursor = self.db_connection.cursor()
         except mysql.connector.Error as e:
             print("Connexion à la base de données MySQL impossible.")
