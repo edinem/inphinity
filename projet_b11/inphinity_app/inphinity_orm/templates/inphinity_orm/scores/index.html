@@ -1,0 +1,112 @@
+{% extends 'inphinity_orm/scores/base.html' %}
+
+{% block content %}
+<div class="right_col" role="main">
+  <div>
+    {% if messages %}
+        {% for message in messages %}
+          <div class="alert alert-success alert-dismissible fade in" role="alert">
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">×</span>
+            </button>
+            {{ message }}
+          </div>
+          {% endfor %}
+    {% endif %}
+    <div class="page-title">
+        <div class="title_left">
+          <h3> Calcul des scores et mise à jour de la base de données.</h3>
+        </div>
+        <div class="title_right">
+        </div>
+    </div>
+    <div class="clearfix"></div>
+    <div class="row">
+      <div class="col-md-4 col-sm-4 col-xs-4">
+        <div class="x_panel">
+          <div class="x_title">
+            <h2>Mise à jour de la base de données</h2>
+            <div class="clearfix"></div>
+          </div>
+          <div class="x_content">
+            <br>
+            <form id="demo-form2" data-parsley-validate="" class="form-horizontal form-label-left" novalidate="">
+	      {% csrf_token %}
+              <div class="form-group">
+                <div class="col-md-6 col-sm-6 col-xs-12 col-md-offset-3">
+                  <button type="submit" class="btn btn-success">Lancer la mise à jour de la base de données</button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-8 col-sm-4 col-xs-4">
+        <div class="x_panel">
+          <div class="x_title">
+            <h2>Calcul des scores</h2>
+            <div class="clearfix"></div>
+          </div>
+
+          <div class="x_subtitle">
+            <h2>Filtres</h2>
+            Les fitres ci-dessous seront appliqués afin de générer un dataset selon les critères spécifiés par l'utilisateur.
+            Si l'utilisateur ne spécifie pas de filtres, la tailles des beans sera de 1, toutes les taxonomies et bases de données seronts choisies.
+            <div class="clearfix"></div>
+          </div>
+          <div class="x_content">
+            <br>
+            <form id="demo-form2" method="post" action="/score/generate/" data-parsley-validate="" class="form-horizontal form-label-left" novalidate="">
+              {% csrf_token %}
+              <div class="form-group">
+                    <label class="control-label col-md-3 col-sm-3 col-xs-12">Taxonomie</label>
+                    <div class="col-md-9 col-sm-9 col-xs-12">
+                      <select class="select2_single form-control" tabindex="-1">
+                        <option>All</option>
+                        {% for levelInteraction in levelInteractions %}
+                          <option>{{ levelInteraction.designation }}</option>
+                        {% endfor %}
+                      </select>
+                    </div>
+              </div>
+              <div class="form-group">
+                <label class="control-label col-md-3 col-sm-3 col-xs-12">Max value for bin</label>
+                <div class="col-md-9 col-sm-9 col-xs-12">
+                  <input type="number" class="form-control" name="maxval" placeholder="Bean max value" value="1">
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="control-label col-md-3 col-sm-3 col-xs-12">Bin Size ( >= 1)</label>
+                <div class="col-md-9 col-sm-9 col-xs-12">
+                  <input type="text" class="form-control" name="binsize" placeholder="Bean size" value="1">
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="control-label col-md-3 col-sm-3 col-xs-12">Bin Number ( >= 1)</label>
+                <div class="col-md-9 col-sm-9 col-xs-12">
+                  <input type="text" class="form-control" name="binnumber" placeholder="Bean number" value="10">
+                </div>
+              </div>              
+	      <div class="form-group">
+                <label class="control-label col-md-3 col-sm-3 col-xs-12">Base de donnees</label>
+                  <div class="col-md-9 col-sm-9 col-xs-12">
+                    <select class="select2_multiple form-control col-lg-12 col-md-12 col-sm-4 col-xs-12" style="height:500px"  name="ds" multiple="multiple">
+                    {% for datasource in dataSources %}
+                      <option value="{{datasource.id}}">{{datasource.designation}}</option>                    
+                    {% endfor %}
+		    </select>
+                   </div>
+              </div>
+              <div class="form-group">
+                <div class="col-md-6 col-sm-6 col-xs-12 col-md-offset-3">
+                  <button type="submit" class="btn btn-success">Calculer</button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

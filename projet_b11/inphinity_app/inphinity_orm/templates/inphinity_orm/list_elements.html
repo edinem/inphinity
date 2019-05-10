@@ -1,0 +1,12 @@
+{% extends 'inphinity_orm/base.html' %}
+
+{% block content %}
+    {% for family in Family %}
+        <div class="families">
+            <div class="date">
+                {{ family.designation }}
+            </div>
+            <h1><a href="{% url 'family_detail' fam_id=family.id %}">{{ family.id }}</a></h1>
+        </div>
+    {% endfor %}
+{% endblock %}

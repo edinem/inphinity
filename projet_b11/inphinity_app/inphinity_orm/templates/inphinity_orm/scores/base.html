@@ -1,0 +1,162 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <!-- Meta, title, CSS, favicons, etc. -->
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="icon" href="images/favicon.ico" type="image/ico" />
+
+  <title>Score calculation </title>
+
+  <!-- Bootstrap -->
+  <link href="{% static 'scores/vendors/bootstrap/dist/css/bootstrap.min.css' %}" rel="stylesheet">
+  <!-- Font Awesome -->
+  <link href="{% static 'scores/vendors/font-awesome/css/font-awesome.min.css' %}" rel="stylesheet">
+  <!-- NProgress -->
+  <link href="{% static 'scores/vendors/nprogress/nprogress.css' %}" rel="stylesheet">
+  <!-- iCheck -->
+  <link href="{% static 'scores/vendors/iCheck/skins/flat/green.css' %}" rel="stylesheet">
+
+  <!-- bootstrap-progressbar -->
+  <link href="{% static 'scores/vendors/bootstrap-progressbar/css/bootstrap-progressbar-3.3.4.min.css' %}" rel="stylesheet">
+  <!-- JQVMap -->
+  <link href="{% static 'scores/vendors/jqvmap/dist/jqvmap.min.css' %}" rel="stylesheet"/>
+  <!-- bootstrap-daterangepicker -->
+  <link href="{% static 'scores/vendors/bootstrap-daterangepicker/daterangepicker.css' %}" rel="stylesheet">
+
+  <!-- Custom Theme Style -->
+  <link href="{% static 'scores/build/css/custom.min.css' %}" rel="stylesheet">
+</head>
+
+<body class="nav-md">
+  <div class="container body">
+    <div class="main_container">
+      <div class="col-md-3 left_col">
+        <div class="left_col scroll-view">
+          <div class="navbar nav_title" style="border: 0;">
+            <a href="index.html" class="site_title"><i class="fa fa-paw"></i> <span>Score calculation</span></a>
+          </div>
+
+          <div class="clearfix"></div>
+
+          <!-- menu profile quick info -->
+          <div class="profile clearfix">
+
+            <div class="profile_info">
+              <span>Welcome,</span>
+              <h2>{{ user.get_full_name }}</h2>
+            </div>
+          </div>
+          <!-- /menu profile quick info -->
+
+          <br />
+
+          <!-- sidebar menu -->
+          <div id="sidebar-menu" class="main_menu_side hidden-print main_menu">
+            <div class="menu_section">
+              <h3>General</h3>
+              <ul class="nav side-menu">
+                <li><a><i class="fa fa-calculator"></i> Score Calculation <span class="fa fa-chevron-down"></span></a>
+                  <ul class="nav child_menu">
+                    <li><a href="/score/index/">Calcul des scores/Màj DB</a></li>
+                    <li><a href="/score/ds/">Téléchargement DS</a></li>
+                    <li><a href="index3.html">Graphiques</a></li>
+                  </ul>
+                </li>
+              </ul>
+            </div>
+
+            <!-- /sidebar menu -->
+          </div>
+        </div>
+  </div>
+        <!-- top navigation -->
+        <div class="top_nav">
+          <div class="nav_menu">
+            <nav>
+              <div class="nav toggle">
+                <a id="menu_toggle"><i class="fa fa-bars"></i></a>
+              </div>
+
+              <ul class="nav navbar-nav navbar-right">
+                <li class="">
+                  <a href="javascript:;" class="user-profile dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
+                    {{ user.get_full_name }}
+                    <span class=" fa fa-angle-down"></span>
+                  </a>
+                  <ul class="dropdown-menu dropdown-usermenu pull-right">
+                    <li><a href="{% url 'user_logout' %}"><i class="fa fa-sign-out pull-right"></i> Log Out</a></li>
+                  </ul>
+                </li>
+
+
+              </ul>
+            </nav>
+          </div>
+        </div>
+
+        <!-- /top navigation -->
+
+        <!-- main content -->
+        {% block content %}
+        {% endblock %}
+        <!-- /main content -->
+
+        <!-- footer content -->
+        <footer>
+          <div class="pull-right">
+            Gentelella - Bootstrap Admin Template by <a href="https://colorlib.com">Colorlib</a>
+          </div>
+          <div class="clearfix"></div>
+        </footer>
+        <!-- /footer content -->
+      </div>
+    </div>
+
+
+    <!-- jQuery -->
+    <script src="{% static 'scores/vendors/jquery/dist/jquery.min.js' %}"></script>
+    <!-- Bootstrap -->
+    <script src="{% static 'scores/vendors/bootstrap/dist/js/bootstrap.min.js' %}"></script>
+    <!-- FastClick -->
+    <script src="{% static 'scores/vendors/fastclick/lib/fastclick.js' %}"></script>
+    <!-- NProgress -->
+    <script src="{% static 'scores/vendors/nprogress/nprogress.js' %}"></script>
+    <!-- Chart.js' %} -->
+    <script src="{% static 'scores/vendors/Chart.js/dist/Chart.min.js' %}"></script>
+    <!-- gauge.js' %} -->
+    <script src="{% static 'scores/vendors/gauge.js/dist/gauge.min.js' %}"></script>
+    <!-- bootstrap-progressbar -->
+    <script src="{% static 'scores/vendors/bootstrap-progressbar/bootstrap-progressbar.min.js' %}"></script>
+    <!-- iCheck -->
+    <script src="{% static 'scores/vendors/iCheck/icheck.min.js' %}"></script>
+    <!-- Skycons -->
+    <script src="{% static 'scores/vendors/skycons/skycons.js' %}"></script>
+    <!-- Flot -->
+    <script src="{% static 'scores/vendors/Flot/jquery.flot.js' %}"></script>
+    <script src="{% static 'scores/vendors/Flot/jquery.flot.pie.js' %}"></script>
+    <script src="{% static 'scores/vendors/Flot/jquery.flot.time.js' %}"></script>
+    <script src="{% static 'scores/vendors/Flot/jquery.flot.stack.js' %}"></script>
+    <script src="{% static 'scores/vendors/Flot/jquery.flot.resize.js' %}"></script>
+    <!-- Flot plugins -->
+    <script src="{% static 'scores/vendors/flot.orderbars/js/jquery.flot.orderBars.js' %}"></script>
+    <script src="{% static 'scores/vendors/flot-spline/js/jquery.flot.spline.min.js' %}"></script>
+    <script src="{% static 'scores/vendors/flot.curvedlines/curvedLines.js' %}"></script>
+    <!-- DateJS -->
+    <script src="{% static 'scores/vendors/DateJS/build/date.js' %}"></script>
+    <!-- JQVMap -->
+    <script src="{% static 'scores/vendors/jqvmap/dist/jquery.vmap.js' %}"></script>
+    <script src="{% static 'scores/vendors/jqvmap/dist/maps/jquery.vmap.world.js' %}"></script>
+    <script src="{% static 'scores/vendors/jqvmap/examples/js/jquery.vmap.sampledata.js' %}"></script>
+    <!-- bootstrap-daterangepicker -->
+    <script src="{% static 'scores/vendors/moment/min/moment.min.js' %}"></script>
+    <script src="{% static 'scores/vendors/bootstrap-daterangepicker/daterangepicker.js' %}"></script>
+
+    <!-- Custom Theme Scripts -->
+    <script src="{% static 'scores/build/js/custom.min.js' %}"></script>
+
+  </body>
+  </html>
