@@ -11,7 +11,6 @@ from projet_b11.import_databases.MySQLConfiguration import MySQLConfiguration
 
 
 class ThreeDid:
-
     # URL which gives us the version of the 3did database
     version_url = 'https://interactome3d.irbbarcelona.org/api/getVersion'
 
@@ -34,8 +33,10 @@ class ThreeDid:
         self.domain_interactions = set()
         self.init_mysql_connection()
 
-    # initializes the mysql connection or raises an exception
     def init_mysql_connection(self):
+        """
+        Initializes the MySQL connection or raises an exception.
+        """
         try:
             config = MySQLConfiguration()
             self.db_connection = mysql.connector.connect(user=config.user, host=config.host)
@@ -45,31 +46,41 @@ class ThreeDid:
             raise e
 
     def close_mysql_connection(self):
+        """
+        Closes the MySQL connections.
+        """
         self.db_connection.close()
         self.db_cursor.close()
 
-    # fetch the database version
     def fetch_version(self):
+        """
+        Fetches the database version from the API.
+        """
         self.version = requests.get(ThreeDid.version_url).content
         self.log.info('Got version: {}'.format(self.version))
 
-    # download compressed SQL file to disk
     def download_archive(self):
+        """
+        Downloads the compressed SQL file and saves it to disk.
+        """
         self.log.info('Downloading archive at {}'.format(ThreeDid.archive_url))
         archive = requests.get(ThreeDid.archive_url)
         self.log.info('Saving archive to {}'.format(ThreeDid.archive_filename))
         open(ThreeDid.archive_filename, 'wb').write(archive.content)
 
-    # extract compressed SQL file
     def extract_archive(self):
+        """
+        Extracts the compressed SQL file.
+        """
         self.log.info('Extracting archive to {}'.format(ThreeDid.sql_filename))
         with gzip.open(ThreeDid.archive_filename, 'rb') as f_in:
             with open(ThreeDid.sql_filename, 'wb') as f_out:
                 shutil.copyfileobj(f_in, f_out)
 
-    # import database into mysql
-    # db_cursor: opened database connection
     def import_sql(self):
+        """
+        Imports the SQL file into the MySQL database.
+        """
 
         # recreate database
         self.log.info('Emptying 3did database.')
@@ -80,11 +91,12 @@ class ThreeDid:
         self.log.info('Importing SQL file into database.')
         subprocess.check_output(['mysql', '-u', 'root', '--show-warnings', '-e', 'use 3did; source ' + ThreeDid.sql_filename + ';'])
 
-    # creates DomainInteraction instances and adds them to the domain_interactions set
     def get_interactions(self):
+        """
+        Creates DomainInteraction instances and adds them to the domain_interactions set.
+        """
 
         self.db_cursor.execute('use 3did')
-
         sql = """select substring_index(d1.pfam_id, '.', 1),
                         substring_index(d2.pfam_id, '.', 1)
                    from ddi1
