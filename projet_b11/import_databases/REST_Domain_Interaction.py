@@ -1,11 +1,13 @@
-from configuration.configuration_api import ConfigurationAPI
-from rest_client.AuthenticationRest import AuthenticationAPI
-from rest_client.DomainRest import *
-from rest_client.DomainInteractionPairRest import *
-from rest_client.DomainSourceInformationRest import *
-from rest_client.DomainInteractionSourceRest import *
-from projet_b11.import_databases.Domain_Interaction import DomainInteraction
 import datetime
+
+from configuration.configuration_api import ConfigurationAPI
+from projet_b11.import_databases.Domain_Interaction import DomainInteraction
+from rest_client.AuthenticationRest import AuthenticationAPI
+from rest_client.DomainInteractionPairRest import *
+from rest_client.DomainInteractionSourceRest import *
+from rest_client.DomainRest import *
+from rest_client.DomainSourceInformationRest import *
+
 """
 Date: le 24/04/19
 
@@ -20,142 +22,145 @@ Date: le 24/04/19
 # For the uses of dictionary
 
 
-"""
-Class uses to get information from Inphinity database through the REST API.
-This class is used to represent domain-domain interaction and a dictionary of all domain
-"""
-
-
 class RESTDomainInteraction:
+    """
+    Class used to get information from Inphinity database through the REST API.
+    This class is used to represent domain-domain interaction and a dictionary of all domain
+    """
 
     def __init__(self):
-        self.domain_dict = dict()  # Dictionnary from id to Pfam
-        self.reverse_dict_domain = {}  # Dictionnary from Pfam to id
-        self.source_dict = dict()  # Dictionnary Source String to source id
-        self.interact_dict = dict()  # Dictionnary from a pair and interact id
-        self.interact_dict_reverse = dict()  # Dictionnary from a pair and interact id
-        self.domain_interactions = set()  # Set of all interactions
+        self.domain_dict = dict()                 # Dictionary from id to Pfam
+        self.domain_dict_reverse = {}             # Dictionary from Pfam to id
+        self.source_dict = dict()                 # Dictionary Source String to source id
+        self.interact_dict = dict()               # Dictionary from DDI id to DDI
+        self.interact_dict_reverse = dict()       # Dictionary from DDI to DDI id
+        self.domain_interactions = set()          # Set of all interactions
         self.domain_interactions_source = list()  # Set of all interactions with source
+        self.new_domain = set()                   # Set for all the new domain we need to insert
+
+        # authentication to use the REST API
         self.conf = ConfigurationAPI()
         self.conf.load_data_from_ini()
-        self.new_domain = set()  # Set for all the new domain we need to insert
         AuthenticationAPI().createAutenthicationToken()
 
-    """
-   Function used to get all the domain from inph database with REST and put them in a dictionary.
-    """
     def get_domain_dict(self):
-        domains = DomainAPI().get_all()
-        for domain in domains:
+        """
+        Retrieves all domains from the Inphinity database and stores them in a dictionary.
+        """
+        for domain in DomainAPI().get_all():
             self.domain_dict.update({domain["id"]: domain["designation"]})
-            self.reverse_dict_domain.update({domain["designation"]: domain["id"]})
+            self.domain_dict_reverse.update({domain["designation"]: domain["id"]})
 
-    """
-    Function used to get all the domain-domain interactions from inph database with REST and put them in a set.
-    """
     def get_domain_inter(self):
-        p = DomainInteractionPairAPI()
-        interactions = p.get_all()
-        for interaction in interactions:
+        """
+        Retrieves all domain-domain interactions from the Inphinity database and stores them in a set.
+        """
+        for interaction in DomainInteractionPairAPI().get_all():
             # Creation of the new interaction
             domain_a = self.domain_dict.get(interaction['domain_a'])
             domain_b = self.domain_dict.get(interaction['domain_b'])
-            tmp = DomainInteraction(domain_a, domain_b)
-            self.domain_interactions.add(tmp)
-            self.interact_dict.update({interaction['id']: tmp})
-            self.interact_dict_reverse.update({tmp: interaction['id']})
+            ddi = DomainInteraction(domain_a, domain_b)
+            self.domain_interactions.add(ddi)
+            self.interact_dict.update({interaction['id']: ddi})
+            self.interact_dict_reverse.update({ddi: interaction['id']})
 
     def get_inter_source(self):
-        p = DomainInteractionSourceAPI()
-        interactions = p.get_all()
-        for interaction in interactions:
+        """
+        Retrieves the interactions sources and stores them in a dictionary.
+        """
+        for interaction in DomainInteractionSourceAPI().get_all():
             interact = self.interact_dict_reverse.get(interaction['domain_interaction'])
             self.domain_interactions_source.append({interact, interaction['information_source']})
-    """
-    Function used to find if all Pfam in a set are present in the inphinity database.
-    
-    :param set_interaction: All new interactions with potential new domain
-    
-    :type set_interaction: set - required
-    
-    
-    """
-    def find_new_domain(self, set_interaction):
-        for interact in set_interaction:
-                if interact.first_dom not in self.domain_dict.values() and interact.second_dom not in self.new_domain:
-                    self.new_domain.add({interact.first_dom})
-                if interact.second_dom not in self.domain_dict.values() and interact.second_dom not in self.new_domain:
-                    self.new_domain.add({interact.second_dom})
 
-    "Function used to insert all new Pfam to the database"
+    def find_new_domain(self, interaction_set):
+        """
+        For all the interactions in the given set, adds to the new_domain dictionary all domains that do not exists in
+        the Inphinity database.
+
+        :param interaction_set: A set of interactions with potential new domains
+        :type interaction_set: set - required
+        """
+        for interaction in interaction_set:
+            if interaction.first_dom not in self.domain_dict.values() and interaction.second_dom not in self.new_domain:
+                self.new_domain.add({interaction.first_dom})
+            if interaction.second_dom not in self.domain_dict.values() and interaction.second_dom not in self.new_domain:
+                self.new_domain.add({interaction.second_dom})
+
     def new_domain_to_data(self):
+        """
+        Returns the new_domain dictionary as a list.
+
+        :return: the domain list
+        :rtype: list
+        """
         domain_list = list()
         for pfam in self.new_domain:
             domain_list.append({"designation": pfam})
         return domain_list
 
-    """
-    Function used to put the new interactions in the correct JSON format.
+    def new_interaction_to_data(self, interaction_set):
+        """
+        Returns the given interaction set as a list.
 
-    :param set_interaction: All new interactions
+        :param interaction_set: All new interactions
+        :type interaction_set: set - required
 
-    :type set_interaction: set - required
-
-
-    """
-    def new_interaction_to_data(self, set_interaction):
+        :return: The interaction set as a list
+        :rtype: list
+        """
         interactions_list = list()
-        for interact in set_interaction:
-            interactions_list.append({"domain_a": self.reverse_dict_domain.values(interact.first_dom), "domain_b":
-                self.reverse_dict_domain.values(interact.second_dom)})
+        for interact in interaction_set:
+            interactions_list.append({
+                "domain_a": self.domain_dict_reverse.values(interact.first_dom),    # TODO get?
+                "domain_b": self.domain_dict_reverse.values(interact.second_dom)})  # TODO get?
         return interactions_list
-    """
-    Function used to insert all the new interaction, it all the correct format and insert the linked InteractionSource.
-    
-    :param set_interaction: A set containing all interactions.
-    :source: A string which is the database name.
-    
-    :type set_interaction: set - required
-    :type source: String - required
-    """
+
     def insert_new_interaction(self, interact_data, source):
+        """
+        Inserts into the Inphinity database all interaction of the given interact_data list for the given source.
+
+        :param interact_data: A list of interactions to insert into the Inphinity database
+        :type  interact_data: list
+
+        :param source: The source of the interaction to insert (e.g. iPfam, 3did)
+        :type  source: string
+        """
         for interact in interact_data:
             interact_id = DomainInteractionPairAPI().setDomainInteractionPair(interact)
-            DomainInteractionSourceAPI().setDomainInteractionSource({"date_creation": datetime.date.today()
-                                                                    , "domain_interaction": interact_id
-                                                                    , "source": self.source_dict.get(source)})
+            DomainInteractionSourceAPI().setDomainInteractionSource({
+                "date_creation": datetime.date.today(),
+                "domain_interaction": interact_id,
+                "source": self.source_dict.get(source)})
 
-    """
-    Function used to update the inphinity database. It use one set of interaction and one source.
-    The function is going to find all new interactions, all new domain from tham and insert the Domain, interactions
-    ans interaction source.
-    
-    :param set_interaction: A set containing all interactions.
-    :source: A string which is the database name.
-    
-    :type set_interaction: set - required
-    :type source: String - required
-    """
     def update_inphinity_database(self, set_interaction, source):
-        #TODO Faire appel a toutes les autres méthodes pour que on puisse utiliser que celle la depuis un nouveau set.
+        """
+        Function used to update the inphinity database. It uses a set of interactions and a source (e.g. 3did).
+        The function is going to find all new interactions, all new domain from them and insert the Domain, interactions
+        ans interaction source.
 
-        #TODO Pour le moment on n'a que insert_new_ineraction qui fait l'insert SI l'ineract est nul part, il faut gérer les cas
-        #TODO Ou l'interaction et deja présente mais pas dans la table avec la source pour laquelle on recherche.
+        :param set_interaction: A set containing all interactions.
+        :type set_interaction: set - required
 
-    """
-    Function used during the update to put the new domains in the inphinity database.
-    """
+        :param source: A string which is the database name.
+        :type source: String - required
+        """
+        # TODO Faire appel a toutes les autres méthodes pour que on puisse utiliser que celle la depuis un nouveau set.
+        # TODO Pour le moment on n'a que insert_new_ineraction qui fait l'insert SI l'ineract est nul part, il faut gérer les cas
+        # TODO Ou l'interaction et deja présente mais pas dans la table avec la source pour laquelle on recherche.
+        pass
+
     def insert_new_domain(self):
-        all_domain = self.new_domain_to_data()
-        for domain in all_domain:
+        """
+        Inserts the new domains into the Inphinity database.
+        """
+        for domain in self.new_domain_to_data():
             new_id = DomainAPI().setDomain(domain)
             self.domain_dict.update({new_id: domain["designation"]})
-            self.reverse_dict_domain.update({domain["designation"]: new_id})
+            self.domain_dict_reverse.update({domain["designation"]: new_id})
 
-    """
-    Function used to create a mapping between the source name and database id.
-    """
     def find_all_source(self):
-        sources = DomainSourceInformationAPI().get_all()
-        for source in sources:
+        """
+        Creates a mapping between a source's name and its database id.
+        """
+        for source in DomainSourceInformationAPI().get_all():
             self.source_dict.update({source["designation"]: source["id"]})
