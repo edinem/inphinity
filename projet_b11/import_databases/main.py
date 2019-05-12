@@ -11,11 +11,13 @@ did.download_archive()
 did.extract_archive()
 did.import_sql()
 did.fetch_interactions()
+print(did.domain_interactions)
 
 #inphinity.update_inphinity_database(did.domain_interactions, '3did')
 
 # Pfam
 pfam = Pfam()
 pfam.get_interactions()
+print(pfam.domain_interactions)
 
-#inphinity.update_inphinity_database(pfam.domain_interactions, 'Pfam')
+#inphinity.update_inphinity_database(pfam.domain_interactions, 'iPfam')
