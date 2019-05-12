@@ -7,41 +7,42 @@ import shutil
 import os
 import re
 
-#TODO import de test
+# TODO import de test
 from projet_b11.import_databases.REST_Domain_Interaction import RESTDomainInteraction
 import sys
-#TODO import de test
+
+# TODO import de test
 
 # TODO Trouver un format pour pour interaction.
-    ##--> Pas de classes sans SQL, creation d'une miniclasse
+##--> Pas de classes sans SQL, creation d'une miniclasse
 # TODO Ouvrir la connexion avec la base de donnee inphinity
-    ##--> Fait par Nico
+##--> Fait par Nico
 # TODO Utiliser REST pour recuperer toutes les interactions.
-    ##-->Fait dans Rest_Pfam
+##-->Fait dans Rest_Pfam
 # TODO Recuperer toutes les interactions sur le serveur FTP
-    ##--> Fait, cette classe permet de retourner
+##--> Fait, cette classe permet de retourner
 # TODO Mettre les interaction inphinity au bon format
-    ##-->Fait la classe contient un set
+##-->Fait la classe contient un set
 # TODO Mettre les interactions Pfam au bon format
-    ##--> Fait, la classe contient un set.
+##--> Fait, la classe contient un set.
 # TODO Comparer les resultats.
 # Dans un second temps
 # TODO Si differente
-    # TODO Trouver les diff et les inserer avec REST
-     ##--> Diff trouvée
-    # TODO Passer toutes les prot a HMM
-    # TODO Trier tous les domaine de REST et HMM afin de trouver les nouveaux et les inserers
-    # TODO Lancer les nouveaux calcules de scores.
-#TODO Trouver comment lancer automatiquement une maj.
+# TODO Trouver les diff et les inserer avec REST
+##--> Diff trouvée
+# TODO Passer toutes les prot a HMM
+# TODO Trier tous les domaine de REST et HMM afin de trouver les nouveaux et les inserers
+# TODO Lancer les nouveaux calcules de scores.
+# TODO Trouver comment lancer automatiquement une maj.
 
-"""
-Class used to get domain-domain interaction from Pfam
-"""
 version_filename = "version.txt"
 interaction_filename = "interactions_pfam.txt"
 
 
 class Pfam:
+    """
+    Class used to get domain-domain interaction from Pfam
+    """
 
     def __init__(self):
         self.server_address = 'ftp.ebi.ac.uk'
@@ -58,13 +59,15 @@ class Pfam:
             raise e
         self.domain_interactions = set()
 
-    """
-    Function used to get the Pfam database version. self.version is used to keep it.
-    """
-    # http://zetcode.com/python/ftp/ Pour la connexion FTP
-    # https://stackoverflow.com/questions/48466421/python-how-to-decompress-a-gzip-file-to-an-uncompressed-file-on-disk
-    # Pour l'ouverture du gz.
     def get_version(self):
+        """
+        Function used to get the Pfam database version. self.version is used to keep it.
+
+        # http://zetcode.com/python/ftp/ Pour la connexion FTP
+        # https://stackoverflow.com/questions/48466421/python-how-to-decompress-a-gzip-file-to-an-uncompressed-file-on-disk
+        # Pour l'ouverture du gz.
+        """
+
         try:
             self.log.info("Downloading version file")
             self.ftp.retrbinary("RETR /pub/databases/Pfam/current_release/Pfam.version.gz",
@@ -80,14 +83,17 @@ class Pfam:
         self.version = open(version_filename, 'r').read()
         self.version = re.findall('\\d+.\\d+', self.version)[0]
         self.log.info("Version is set to {}".format(self.version))
-    """
-    Function used to get all the domain-domain interactions from Pfam database.
-    All the interaction are in domain_interactions
-    """
-    # https://bytes.com/topic/python/answers/870172-python-search-text-file-string-replace
-    # For fileInput.
-    # https://docs.python.org/2/library/fileinput.html
+
     def get_interactions(self):
+        """
+        Function used to get all the domain-domain interactions from Pfam database.
+        All the interaction are in domain_interactions
+
+        # https://bytes.com/topic/python/answers/870172-python-search-text-file-string-replace
+        # For fileInput.
+        # https://docs.python.org/2/library/fileinput.html
+        """
+
         # Downloads of the archive
         try:
             self.ftp.retrbinary("RETR /pub/databases/Pfam/current_release/database_files/pfamA_interactions.txt.gz",
@@ -113,20 +119,12 @@ class Pfam:
             # Instantiation of a new interaction and add it to domain_interactions
             self.domain_interactions.add(DomainInteraction(sep[0], sep[2]))
         self.log.info("All Pfam interactions done")
-    """
-    Redefinition of toString so it display all the interactions in Pfam Database.
-    """
+
     def __str__(self):
+        """
+        Redefinition of toString so it display all the interactions in Pfam Database.
+        """
         tmp = "Version : " + self.version + "\n List of all interactions:\n"
         for inter in self.domain_interactions:
             tmp += inter.__str__()
         return tmp
-
-
-# Test
-pfam = Pfam()
-pfam.get_interactions()
-inphi = RESTDomainInteraction()
-inphi.get_domain_dict()
-inphi.get_domain_inter()
-inphi.get_inter_source()
