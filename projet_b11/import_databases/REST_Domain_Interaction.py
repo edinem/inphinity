@@ -29,50 +29,67 @@ class RESTDomainInteraction:
     """
 
     def __init__(self):
-        self.domain_dict = dict()  # Dictionary from id to Pfam
-        self.domain_dict_reverse = {}  # Dictionary from Pfam to id
-        self.source_dict = dict()  # Dictionary Source string to source id
-        self.interact_dict = dict()  # Dictionary from DDI id to DDI
-        self.interact_dict_reverse = dict()  # Dictionary from DDI to DDI id
-        self.domain_interactions = set()  # Set of all interactions
-        self.domain_interactions_source = dict()  # Dictionary from DDI id to DDI source
-
-        self.new_domain = set()  # Set for all the new domain we need to insert
-        self.new_interactions = set()  # Set for all the new interactions we want to insert
 
         # authentication to use the REST API
         self.conf = ConfigurationAPI()
         self.conf.load_data_from_ini()
         AuthenticationAPI().createAutenthicationToken()
 
-    def get_domain_dict(self):
+        # initialise a domain id to domain designation dictionary and vice versa
+        self.domain_dict = {}
+        self.domain_dict_reverse = {}
+        self.__init_domain_dict()
+
+        # initialise a ddi id to ddi (DomainInteraction instance) dictionary and vice versa
+        self.interaction_dict = {}
+        self.interaction_dict_reverse = {}
+        self.__init_interaction_dict()
+
+        # initialise a source designation to source id dictionary
+        self.source_dict = {}
+        self.__init_source_dict()
+
+        # initialise a ddi id to source id dictionary
+        self.interaction_source_dict = {}
+        self.__init_interaction_source_dict()
+
+        # sets to add domains and interactions not present in Inphinity
+        self.new_domain = set()
+        self.new_interactions = set()
+
+    def __init_domain_dict(self):
         """
-        Retrieves all domains from the Inphinity database and stores them in a dictionary.
+        Retrieves all domains from Inphinity and stores them in the two corresponding dictionaries.
         """
         for domain in DomainAPI().get_all():
-            self.domain_dict.update({domain["id"]: domain["designation"]})
-            self.domain_dict_reverse.update({domain["designation"]: domain["id"]})
+            self.domain_dict[domain['id']] = domain['designation']
+            self.domain_dict_reverse[domain['designation']] = domain['id']
 
-    def get_domain_inter(self):
+    def __init_interaction_dict(self):
         """
-        Retrieves all domain-domain interactions from the Inphinity database and stores them in a set.
+        Retrieves all domain-domain interactions from Inphinity and stores them in the two corresponding dictionaries.
         """
         for interaction in DomainInteractionPairAPI().get_all():
-            # Creation of the new interaction
-            domain_a = self.domain_dict.get(interaction['domain_a'])
-            domain_b = self.domain_dict.get(interaction['domain_b'])
+            domain_a = self.domain_dict[interaction['domain_a']]
+            domain_b = self.domain_dict[interaction['domain_b']]
             ddi = DomainInteraction(domain_a, domain_b)
-            self.domain_interactions.add(ddi)
-            self.interact_dict.update({interaction['id']: ddi})
-            self.interact_dict_reverse.update({ddi: interaction['id']})
+            self.interaction_dict[interaction['id']] = ddi
+            self.interaction_dict_reverse[ddi] = interaction['id']
 
-    def get_inter_source(self):
+    def __init_source_dict(self):
         """
-        Retrieves the interactions sources and stores them in a dictionary.
+        Retrieves all sources from Inphinity and stores them in the corresponding dictionary.
         """
-        for interaction in DomainInteractionSourceAPI().get_all():
-            interaction_id = self.interact_dict_reverse.get(interaction['domain_interaction'])
-            self.domain_interactions_source.update({interaction_id: interaction['information_source']})
+        for source in DomainSourceInformationAPI().get_all():
+            self.source_dict[source['designation']] = source['id']
+
+    def __init_interaction_source_dict(self):
+        """
+        Retrieves the interaction sources and stores them in the corresponding dictionary.
+        """
+        for interaction_source in DomainInteractionSourceAPI().get_all():
+            interaction_id = interaction_source['domain_interaction']
+            self.interaction_source_dict[interaction_id] = interaction_source['information_source']
 
     def find_new_domain(self, interaction_set):
         """
@@ -108,7 +125,7 @@ class RESTDomainInteraction:
         :type  interaction_set: set
         """
         for interaction in interaction_set:
-            if self.interact_dict_reverse.get(interaction) is None:
+            if self.interaction_dict_reverse.get(interaction) is None:
                 self.new_interactions.add(interaction)
 
     def new_interaction_to_data(self):
@@ -169,8 +186,8 @@ class RESTDomainInteraction:
         for interaction in self.new_interaction_to_data():
             interaction_id = DomainInteractionPairAPI().setDomainInteractionPair(interaction)
             ddi = DomainInteraction(interaction.domain_a, interaction.domain_b)
-            self.interact_dict.update({interaction_id: ddi})
-            self.interact_dict_reverse.update({ddi: interaction})
+            self.interaction_dict.update({interaction_id: ddi})
+            self.interaction_dict_reverse.update({ddi: interaction})
 
     def insert_new_interaction_source(self, interaction_set, source):
         """
@@ -182,17 +199,10 @@ class RESTDomainInteraction:
         :type source: string
         """
         for interaction in interaction_set:
-            interaction_id = self.interact_dict_reverse.get(interaction)
-            current_source = self.domain_interactions_source.get(interaction_id)
+            interaction_id = self.interaction_dict_reverse.get(interaction)
+            current_source = self.interaction_source_dict.get(interaction_id)
             if current_source is None or current_source != source:
                 DomainInteractionSourceAPI().setDomainInteractionSource({
-                    "date_creation": datetime.datetime.now(),
+                    "date_creation": datetime.date.today(),
                     "domain_interaction": interaction_id,
                     "source": self.source_dict.get(source)})
-
-    def find_all_source(self):
-        """
-        Creates a mapping between a source's name and its database id.
-        """
-        for source in DomainSourceInformationAPI().get_all():
-            self.source_dict.update({source["designation"]: source["id"]})
