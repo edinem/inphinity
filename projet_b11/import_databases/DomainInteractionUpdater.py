@@ -22,7 +22,7 @@ from rest_client.DomainRest import DomainAPI
 from rest_client.DomainSourceInformationRest import DomainSourceInformationAPI
 
 
-class RESTDomainInteraction:
+class DomainInteractionUpdater:
     """
     Class used to get information from Inphinity database through the REST API.
     This class is used to represent domain-domain interaction and a dictionary of all domain
@@ -187,6 +187,10 @@ class RESTDomainInteraction:
         :param source: a string which is the database name
         :type  source: string
         """
+
+        # 0. clear new_domains and new_interactions
+        self.new_domains.clear()
+        self.new_interactions.clear()
 
         # 1. check which domain from the given interactions do not exists in Inphinity
         self.__find_new_domains(interaction_set)
