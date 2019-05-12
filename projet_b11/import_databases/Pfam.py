@@ -8,7 +8,7 @@ import os
 import re
 
 # TODO import de test
-from projet_b11.import_databases.REST_Domain_Interaction import RESTDomainInteraction
+from projet_b11.import_databases.DomainInteractionUpdater import DomainInteractionUpdater
 import sys
 
 # TODO import de test

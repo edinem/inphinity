@@ -6,11 +6,15 @@ import subprocess
 import mysql.connector
 import requests
 
-from projet_b11.import_databases.Domain_Interaction import DomainInteraction
+from projet_b11.import_databases.DomainInteraction import DomainInteraction
 from projet_b11.import_databases.MySQLConfiguration import MySQLConfiguration
 
 
 class ThreeDid:
+    """
+    Utility class to download the 3did database and extract the DDI.
+    """
+
     # URL which gives us the version of the 3did database
     version_url = 'https://interactome3d.irbbarcelona.org/api/getVersion'
 
@@ -31,9 +35,9 @@ class ThreeDid:
         self.db_cursor = None
         self.db_connection = None
         self.domain_interactions = set()
-        self.init_mysql_connection()
+        self.__init_mysql_connection()
 
-    def init_mysql_connection(self):
+    def __init_mysql_connection(self):
         """
         Initializes the MySQL connection or raises an exception.
         """
@@ -45,7 +49,7 @@ class ThreeDid:
             self.log.error('Connexion à la base de données MySQL impossible.')
             raise e
 
-    def close_mysql_connection(self):
+    def __close_mysql_connection(self):
         """
         Closes the MySQL connections.
         """
@@ -91,7 +95,7 @@ class ThreeDid:
         self.log.info('Importing SQL file into database.')
         subprocess.check_output(['mysql', '-u', 'root', '--show-warnings', '-e', 'use 3did; source ' + ThreeDid.sql_filename + ';'])
 
-    def get_interactions(self):
+    def fetch_interactions(self):
         """
         Creates DomainInteraction instances and adds them to the domain_interactions set.
         """
@@ -110,4 +114,4 @@ class ThreeDid:
             self.domain_interactions.add(DomainInteraction(d1, d2))
 
         self.log.info('{} domain interactions extracted.'.format(str(len(self.domain_interactions))))
-        self.close_mysql_connection()
+        self.__close_mysql_connection()
