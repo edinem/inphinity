@@ -1,6 +1,6 @@
 from ftplib import FTP
 import ftplib
-from projet_b11.import_databases.Domain_Interaction import DomainInteraction
+from projet_b11.import_databases.DomainInteraction import DomainInteraction
 import gzip
 import logging
 import shutil
@@ -63,9 +63,9 @@ class Pfam:
         """
         Function used to get the Pfam database version. self.version is used to keep it.
 
-        # http://zetcode.com/python/ftp/ Pour la connexion FTP
-        # https://stackoverflow.com/questions/48466421/python-how-to-decompress-a-gzip-file-to-an-uncompressed-file-on-disk
-        # Pour l'ouverture du gz.
+        http://zetcode.com/python/ftp/ Pour la connexion FTP
+        https://stackoverflow.com/questions/48466421/python-how-to-decompress-a-gzip-file-to-an-uncompressed-file-on-disk
+        Pour l'ouverture du gz.
         """
 
         try:
@@ -89,9 +89,9 @@ class Pfam:
         Function used to get all the domain-domain interactions from Pfam database.
         All the interaction are in domain_interactions
 
-        # https://bytes.com/topic/python/answers/870172-python-search-text-file-string-replace
-        # For fileInput.
-        # https://docs.python.org/2/library/fileinput.html
+        https://bytes.com/topic/python/answers/870172-python-search-text-file-string-replace
+        For fileInput.
+        https://docs.python.org/2/library/fileinput.html
         """
 
         # Downloads of the archive
