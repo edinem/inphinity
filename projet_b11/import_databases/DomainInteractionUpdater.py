@@ -12,6 +12,7 @@ https://www.journaldev.com/23232/python-add-to-dictionary
 """
 
 import datetime
+import logging
 
 from configuration.configuration_api import ConfigurationAPI
 from projet_b11.import_databases.DomainInteraction import DomainInteraction
@@ -29,6 +30,11 @@ class DomainInteractionUpdater:
     """
 
     def __init__(self):
+
+        # configure logger
+        self.log = logging.getLogger(__name__)
+        self.log.setLevel(logging.INFO)
+        self.log.addHandler(logging.StreamHandler())
 
         # authentication to use the REST API
         self.conf = ConfigurationAPI()
@@ -64,6 +70,7 @@ class DomainInteractionUpdater:
         for domain in DomainAPI().get_all():
             self.domain_dict[domain['id']] = domain['designation']
             self.domain_dict_reverse[domain['designation']] = domain['id']
+        self.log.info('Retrieved {} domains from Inphinity.'.format(len(self.domain_dict)))
 
     def __init_interaction_dict(self):
         """
@@ -75,6 +82,7 @@ class DomainInteractionUpdater:
             ddi = DomainInteraction(domain_a, domain_b)
             self.interaction_dict[interaction['id']] = ddi
             self.interaction_dict_reverse[ddi] = interaction['id']
+        self.log.info('Retrieved {} domains interactions from Inphinity.'.format(len(self.interaction_dict)))
 
     def __init_source_dict(self):
         """
@@ -82,6 +90,7 @@ class DomainInteractionUpdater:
         """
         for source in DomainSourceInformationAPI().get_all():
             self.source_dict[source['designation']] = source['id']
+        self.log.info('Retrieved {} sources from Inphinity.'.format(len(self.source_dict)))
 
     def __init_interaction_source_dict(self):
         """
@@ -90,6 +99,7 @@ class DomainInteractionUpdater:
         for interaction_source in DomainInteractionSourceAPI().get_all():
             interaction_id = interaction_source['domain_interaction']
             self.interaction_source_dict[interaction_id] = interaction_source['information_source']
+        self.log.info('Retrieved {} domain interaction sources from Inphinity.'.format(len(self.interaction_source_dict)))
 
     def __find_new_domains(self, interaction_set):
         """
@@ -98,11 +108,13 @@ class DomainInteractionUpdater:
         :param interaction_set: A set of DomainInteraction
         :type interaction_set: set
         """
+        self.new_domains.clear()
         for interaction in interaction_set:
             if self.domain_dict_reverse[interaction.first_dom] is None:
                 self.new_domains.add(interaction.first_dom)
             if self.domain_dict_reverse[interaction.second_dom] is None:
                 self.new_domains.add(interaction.second_dom)
+        self.log.info('Found {} new domains.'.format(len(self.new_domains)))
 
     def __find_new_interactions(self, interaction_set):
         """
@@ -111,9 +123,11 @@ class DomainInteractionUpdater:
         :param interaction_set: A set of DomainInteraction
         :type  interaction_set: set
         """
+        self.new_interactions.clear()
         for interaction in interaction_set:
             if self.interaction_dict_reverse[interaction] is None:
                 self.new_interactions.add(interaction)
+        self.log.info('Found {} new domain interactions out of {}.'.format(len(self.new_interactions), len(interaction_set)))
 
     def __new_domains_to_list(self):
         """
@@ -140,6 +154,7 @@ class DomainInteractionUpdater:
         """
         Inserts the new domains into Inphinity and update the corresponding dictionaries.
         """
+        self.log.info('Inserting new domains.')
         for domain in self.__new_domains_to_list():
             domain_id = DomainAPI().setDomain(domain)
             self.domain_dict[domain_id] = domain['designation']
@@ -149,6 +164,7 @@ class DomainInteractionUpdater:
         """
         Inserts the new interactions into Inphinity and update the corresponding dictionaries.
         """
+        self.log.info('Inserting new domain interactions.')
         for interaction in self.__new_interactions_to_list():
             interaction_id = DomainInteractionPairAPI().setDomainInteractionPair(interaction)
             ddi = DomainInteraction(interaction.domain_a, interaction.domain_b)
@@ -165,6 +181,7 @@ class DomainInteractionUpdater:
         :param source: the source of the interaction
         :type  source: string
         """
+        self.log.info('Inserting new domain interaction sources.')
         for interaction in interaction_set:
             interaction_id = self.interaction_dict_reverse[interaction]
             current_source_id = self.interaction_source_dict[interaction_id]
@@ -187,10 +204,6 @@ class DomainInteractionUpdater:
         :param source: a string which is the database name
         :type  source: string
         """
-
-        # 0. clear new_domains and new_interactions
-        self.new_domains.clear()
-        self.new_interactions.clear()
 
         # 1. check which domain from the given interactions do not exists in Inphinity
         self.__find_new_domains(interaction_set)
