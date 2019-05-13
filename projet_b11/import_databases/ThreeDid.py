@@ -147,17 +147,24 @@ class ThreeDid:
         self.__log.info('{} domain interactions extracted.'.format(str(len(self.domain_interactions))))
         self.__close_mysql_connection()
 
-    def get_interactions(self):
-
+    def has_new_version(self):
+        """
+        :return: True if a new version of the database if available, false otherwise
+        """
         self.__get_current_version()
         self.__get_latest_version()
 
         if self.current_version == self.latest_version:
-            self.__log.info('Database is up-to-date.')
-            return
+            self.__log.info('No new version found.')
+            return False
+        else:
+            self.__log.info('New version found: {}.'.format(self.latest_version))
+            return True
 
-        self.__log.info('A new version has been found.')
-
+    def get_interactions(self):
+        """
+        Downloads the database and extracts the domain-domain interactions.
+        """
         self.__download_archive()
         self.__extract_archive()
         self.__import_sql()
