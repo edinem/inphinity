@@ -169,15 +169,6 @@ class Pfam:
             return True
 
     def get_interactions(self):
-
-        self.__get_current_version()
-        self.__get_latest_version()
-
-        if self.current_version == self.latest_version:
-            self.log.info('Database is up-to-date.')
-            return
-
-        self.log.info('A new version has been found.')
         self.__fetch_interactions()
         self.__save_new_version()
 
