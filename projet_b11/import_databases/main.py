@@ -3,7 +3,8 @@ from projet_b11.import_databases.ThreeDid import ThreeDid
 from projet_b11.import_databases.DomainInteractionUpdater import DomainInteractionUpdater
 
 
-def updateDB():
+def update_db():
+
     inphinity = DomainInteractionUpdater()
 
     # 3did

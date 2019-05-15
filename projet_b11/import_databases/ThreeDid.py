@@ -1,13 +1,12 @@
 import gzip
 import logging
+import os
+import re
 import shutil
-import subprocess
 
-import mysql.connector
 import requests
 
 from projet_b11.import_databases.DomainInteraction import DomainInteraction
-from projet_b11.import_databases.MySQLConfiguration import MySQLConfiguration
 
 
 class ThreeDid:
@@ -21,23 +20,18 @@ class ThreeDid:
     # URL which gives us the version of the 3did database
     __version_url = 'https://interactome3d.irbbarcelona.org/api/getVersion'
 
-    # do not use directly – URL where we can find the compressed SQL file
-    __db_url = ['https://3did.irbbarcelona.org/download/current/', '3did.sql', '.gz']
+    # do not use directly – URL where we can find the file with the DDI from 3did
+    __ddi_url = ['https://3did.irbbarcelona.org/download/current/', '3did_flat', '.gz']
 
-    __archive_url = ''.join(__db_url)
-    __archive_filename = ''.join(__db_url[1:])
-    __sql_filename = __db_url[1]
+    __archive_url = ''.join(__ddi_url)
+    __archive_filename = ''.join(__ddi_url[1:])
+    __ddi_filename = __ddi_url[1]
 
     def __init__(self):
 
         self.__log = logging.getLogger(__name__)
         self.__log.setLevel(logging.INFO)
         self.__log.addHandler(logging.StreamHandler())
-
-        # init MySQL connection
-        self.__db_cursor = None
-        self.__db_connection = None
-        self.__init_mysql_connection()
 
         # create version file if it does not exists
         try:
@@ -48,25 +42,6 @@ class ThreeDid:
         self.current_version = None
         self.latest_version = None
         self.domain_interactions = set()
-
-    def __init_mysql_connection(self):
-        """
-        Initializes the MySQL connection or raises an exception.
-        """
-        try:
-            config = MySQLConfiguration()
-            self.__db_connection = mysql.connector.connect(user=config.user, host=config.host)
-            self.__db_cursor = self.__db_connection.cursor()
-        except mysql.connector.Error as e:
-            self.__log.error('Connexion à la base de données MySQL impossible.')
-            raise e
-
-    def __close_mysql_connection(self):
-        """
-        Closes the MySQL connections.
-        """
-        self.__db_connection.close()
-        self.__db_cursor.close()
 
     def __get_current_version(self):
         """
@@ -93,7 +68,7 @@ class ThreeDid:
 
     def __download_archive(self):
         """
-        Downloads the compressed SQL file and saves it to disk.
+        Downloads the archive containing the DDI and saves it to disk.
         """
         self.__log.info('Downloading archive at {}'.format(ThreeDid.__archive_url))
         archive = requests.get(ThreeDid.__archive_url)
@@ -104,48 +79,28 @@ class ThreeDid:
 
     def __extract_archive(self):
         """
-        Extracts the compressed SQL file.
+        Extracts the DDI archive file.
         """
-        self.__log.info('Extracting archive to {}'.format(ThreeDid.__sql_filename))
+        self.__log.info('Extracting archive to {}'.format(ThreeDid.__ddi_filename))
         with gzip.open(ThreeDid.__archive_filename, 'rb') as f_in:
-            with open(ThreeDid.__sql_filename, 'wb') as f_out:
+            with open(ThreeDid.__ddi_filename, 'wb') as f_out:
                 shutil.copyfileobj(f_in, f_out)
-
-    def __import_sql(self):
-        """
-        Imports the SQL file into the MySQL database.
-        """
-
-        # recreate database
-        self.__log.info('Emptying 3did database.')
-        self.__db_cursor.execute('drop database if exists 3did')
-        self.__db_cursor.execute('create database 3did')
-
-        # import downloaded database
-        self.__log.info('Importing SQL file into database.')
-        subprocess.check_output(
-            ['mysql', '-u', 'root', '--show-warnings', '-e', 'use 3did; source ' + ThreeDid.__sql_filename + ';'])
+        os.remove(ThreeDid.__archive_filename)
 
     def __fetch_interactions(self):
         """
         Creates DomainInteraction instances and adds them to the domain_interactions set.
         """
 
-        self.__db_cursor.execute('use 3did')
-        sql = """select substring_index(d1.pfam_id, '.', 1),
-                        substring_index(d2.pfam_id, '.', 1)
-                   from ddi1
-                  inner join domain d1
-                     on ddi1.domain1 = d1.name
-                  inner join domain d2
-                     on ddi1.domain2 = d2.name;"""
+        with open(ThreeDid.__ddi_filename) as f:
+            for line in f:
+                res = re.match(r'^#=ID.*(PF\d{5})\.\d+@Pfam.*(PF\d{5})\.\d+@Pfam.*$', line)
+                if res is not None:
+                    domain_a, domain_b = res.groups()
+                    self.domain_interactions.add(DomainInteraction(domain_a, domain_b))
 
-        self.__db_cursor.execute(sql)
-        for d1, d2 in self.__db_cursor.fetchall():
-            self.domain_interactions.add(DomainInteraction(d1, d2))
-
+        os.remove(ThreeDid.__ddi_filename)
         self.__log.info('{} domain interactions extracted.'.format(str(len(self.domain_interactions))))
-        self.__close_mysql_connection()
 
     def has_new_version(self):
         """
@@ -167,6 +122,6 @@ class ThreeDid:
         """
         self.__download_archive()
         self.__extract_archive()
-        self.__import_sql()
         self.__fetch_interactions()
-        self.__save_new_version()
+        if self.latest_version is not None:
+            self.__save_new_version()
