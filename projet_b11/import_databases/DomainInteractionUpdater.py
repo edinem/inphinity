@@ -1,11 +1,6 @@
 """
 Date: le 24/04/19
 
-TODO separer l'insert d'interaction et l'insert d'interaction par bd
-TODO -> Si on la trouve pas AVEC SOURCE on regarde si on la trouve SANS SOURCE
-TODO -> Si on la trouve sans source on l'insert dans les sources
-TODO -> Si on la trouve pas sans les sources on l'insert dans les non-source et les sources.
-
 For the uses of dictionary
 https://www.tutorialspoint.com/python/python_dictionary.htm
 https://www.journaldev.com/23232/python-add-to-dictionary

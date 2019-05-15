@@ -8,30 +8,6 @@ from ftplib import FTP
 
 from projet_b11.import_databases.DomainInteraction import DomainInteraction
 
-# TODO import de test
-# TODO Trouver un format pour pour interaction.
-##--> Pas de classes sans SQL, creation d'une miniclasse
-# TODO Ouvrir la connexion avec la base de donnee inphinity
-##--> Fait par Nico
-# TODO Utiliser REST pour recuperer toutes les interactions.
-##-->Fait dans Rest_Pfam
-# TODO Recuperer toutes les interactions sur le serveur FTP
-##--> Fait, cette classe permet de retourner
-# TODO Mettre les interaction inphinity au bon format
-##-->Fait la classe contient un set
-# TODO Mettre les interactions Pfam au bon format
-##--> Fait, la classe contient un set.
-# TODO Comparer les resultats.
-# Dans un second temps
-# TODO Si differente
-# TODO Trouver les diff et les inserer avec REST
-##--> Diff trouvée
-# TODO Passer toutes les prot a HMM
-# TODO Trier tous les domaine de REST et HMM afin de trouver les nouveaux et les inserers
-# TODO Lancer les nouveaux calcules de scores.
-# TODO Trouver comment lancer automatiquement une maj.
-
-
 
 class Pfam:
     """
@@ -86,9 +62,11 @@ class Pfam:
         """
         Function used to get the Pfam database version. self.version is used to keep it.
 
-        http://zetcode.com/python/ftp/ Pour la connexion FTP
+        Pour la connexion FTP
+        http://zetcode.com/python/ftp/
+
+        Pour l'ouverture du gz
         https://stackoverflow.com/questions/48466421/python-how-to-decompress-a-gzip-file-to-an-uncompressed-file-on-disk
-        Pour l'ouverture du gz.
         """
 
         try:
@@ -121,10 +99,10 @@ class Pfam:
     def __fetch_interactions(self):
         """
         Function used to get all the domain-domain interactions from Pfam database.
-        All the interaction are in domain_interactions
+        All the interaction are in domain_interactions.
 
+        For fileInput
         https://bytes.com/topic/python/answers/870172-python-search-text-file-string-replace
-        For fileInput.
         https://docs.python.org/2/library/fileinput.html
         """
 

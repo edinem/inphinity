@@ -11,7 +11,8 @@ class DomainInteraction:
         """
         Redefine equals so we can compare each domain-domain interaction easily.
 
-        https://www.dimagi.com/blog/overriding-equals-in-python/ How to define equals.
+        How to define equals
+        https://www.dimagi.com/blog/overriding-equals-in-python/
         """
         return isinstance(obj, DomainInteraction) and ((self.first_dom == obj.first_dom and
                                                         self.second_dom == obj.second_dom) or
