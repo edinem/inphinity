@@ -131,6 +131,7 @@ class Pfam:
             # Instantiation of a new interaction and add it to domain_interactions
             self.domain_interactions.add(DomainInteraction(sep[0], sep[2]))
         self.log.info("All Pfam interactions done")
+        os.remove(Pfam.interaction_filename)
 
     def has_new_version(self):
         """
@@ -148,7 +149,8 @@ class Pfam:
 
     def get_interactions(self):
         self.__fetch_interactions()
-        self.__save_new_version()
+        if self.latest_version is not None:
+            self.__save_new_version()
 
     def __str__(self):
         """
