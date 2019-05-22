@@ -11,19 +11,20 @@ def update_db():
 
     inphinity = DomainInteractionUpdater()
     updated = False
+    interaction_inserted = 0
 
     # 3did
     did = ThreeDid()
     if did.has_new_version():
         did.get_interactions()
-        inphinity.update_inphinity_database(did.domain_interactions, '3did')
+        interaction_inserted += inphinity.update_inphinity_database(did.domain_interactions, '3did')
         updated = True
 
     # Pfam
     pfam = Pfam()
     if pfam.has_new_version():
         pfam.get_interactions()
-        inphinity.update_inphinity_database(pfam.domain_interactions, 'iPfam')
+        interaction_inserted += inphinity.update_inphinity_database(pfam.domain_interactions, 'iPfam')
         updated = True
 
     if updated:

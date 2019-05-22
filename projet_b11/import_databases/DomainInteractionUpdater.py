@@ -222,4 +222,6 @@ class DomainInteractionUpdater:
 
         # 5. check which of the given interactions do not have a interaction source corresponding to the given source
         self.__insert_new_interaction_sources(interaction_set, source)
+
         self.log.info('Done.')
+        return len(self.new_interactions)
