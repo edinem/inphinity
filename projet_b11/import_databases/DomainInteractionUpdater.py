@@ -179,11 +179,14 @@ class DomainInteractionUpdater:
         :param source: the source of the interaction
         :type  source: string
         """
-        self.log.info('Inserting new domain interaction sources.')
         source_id = self.source_dict[source]
+        insertion_count = 0
+
         for interaction in interaction_set:
+
             interaction_id = self.interaction_dict_reverse[interaction]
             current_source_ids = self.interaction_source_dict.get(interaction_id)
+
             if current_source_ids is None or source_id not in current_source_ids:
                 res = DomainInteractionSourceAPI().setDomainInteractionSource({
                     'date_creation': datetime.date.today().__str__(),
@@ -191,6 +194,9 @@ class DomainInteractionUpdater:
                     'information_source': source_id
                 })
                 self.interaction_source_dict[res['id']] = res['information_source']
+                insertion_count += 1
+
+        self.log.info('Inserted {} domain interaction sources.'.format(insertion_count))
 
     def update_inphinity_database(self, interaction_set, source):
         """
