@@ -38,7 +38,3 @@ def get_last_update_date():
             return f.readline()
     except FileNotFoundError:
         return ''
-
-
-update_db()
-print(get_last_update_date())
