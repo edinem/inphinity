@@ -1,23 +1,40 @@
-import mysql.connector
-from ThreeDid import *
+import datetime
 
-# init mysql connection
-try:
-    db_connection = mysql.connector.connect(user='root', host='localhost')
-    db_cursor = db_connection.cursor()
-except mysql.connector.Error as e:
-    print(e)
+from projet_b11.import_databases.Pfam import Pfam
+from projet_b11.import_databases.ThreeDid import ThreeDid
+from projet_b11.import_databases.DomainInteractionUpdater import DomainInteractionUpdater
 
-did = ThreeDid()
+last_update_filename = 'last_update_date.txt'
 
-# did.fetch_version()
-# print(did.version)
 
-# did.download_archive():
-# did.extract_archive():
-# did.import_sql(db_cursor):
+def update_db():
 
-did.print_ddi(db_cursor)
+    inphinity = DomainInteractionUpdater()
+    updated = False
+    interaction_inserted = 0
 
-db_connection.close()
-db_cursor.close()
+    # 3did
+    did = ThreeDid()
+    if did.has_new_version():
+        did.get_interactions()
+        interaction_inserted += inphinity.update_inphinity_database(did.domain_interactions, '3did')
+        updated = True
+
+    # Pfam
+    pfam = Pfam()
+    if pfam.has_new_version():
+        pfam.get_interactions()
+        interaction_inserted += inphinity.update_inphinity_database(pfam.domain_interactions, 'iPfam')
+        updated = True
+
+    if updated:
+        with open(last_update_filename, 'w') as f:
+            f.writelines(datetime.datetime.today().__str__())
+
+
+def get_last_update_date():
+    try:
+        with open(last_update_filename, 'r') as f:
+            return f.readline()
+    except FileNotFoundError:
+        return ''

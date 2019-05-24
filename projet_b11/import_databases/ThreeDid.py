@@ -1,63 +1,127 @@
-import requests
 import gzip
-import shutil
+import logging
 import os
-import subprocess
+import re
+import shutil
+
+import requests
+
+from projet_b11.import_databases.DomainInteraction import DomainInteraction
+
 
 class ThreeDid:
+    """
+    Utility class to download the 3did database and extract the DDI.
+    """
+
+    # path for the current version text file
+    __current_version_file = 'version_3did.txt'
 
     # URL which gives us the version of the 3did database
-    version_url = 'https://interactome3d.irbbarcelona.org/api/getVersion'
+    __version_url = 'https://interactome3d.irbbarcelona.org/api/getVersion'
 
-    # do not use directly – URL where we can find the compressed SQL file
-    db_url = ['https://3did.irbbarcelona.org/download/current/', '3did.sql', '.gz']
+    # do not use directly – URL where we can find the file with the DDI from 3did
+    __ddi_url = ['https://3did.irbbarcelona.org/download/current/', '3did_flat', '.gz']
 
-    archive_url = ''.join(db_url)
-    archive_filename = ''.join(db_url[1:])
-    sql_filename = db_url[1]
+    __archive_url = ''.join(__ddi_url)
+    __archive_filename = ''.join(__ddi_url[1:])
+    __ddi_filename = __ddi_url[1]
 
     def __init__(self):
-        self.version = None
 
-    # fetch the database version
-    def fetch_version(self):
-        self.version = requests.get(ThreeDid.version_url).content
+        self.__log = logging.getLogger(__name__)
+        self.__log.setLevel(logging.INFO)
+        self.__log.addHandler(logging.StreamHandler())
 
-    # download compressed SQL file to disk
-    def download_archive(self):
-        archive = requests.get(ThreeDid.db_url)
-        open(ThreeDid.archive_filename, 'wb').write(archive.content)
+        # create version file if it does not exists
+        try:
+            open(ThreeDid.__current_version_file, 'x')
+        except FileExistsError:
+            pass
 
-    # extract compressed SQL file
-    def extract_sql(self):
-        with gzip.open(ThreeDid.archive_filename, 'rb') as f_in:
-            with open(ThreeDid.sql_filename, 'wb') as f_out:
+        self.current_version = None
+        self.latest_version = None
+        self.domain_interactions = set()
+
+    def __get_current_version(self):
+        """
+        Fetches the database version from the current version text file.
+        """
+        with open(ThreeDid.__current_version_file, 'r') as f:
+            self.current_version = f.readline()
+        self.__log.info('Current version: {}'.format(self.current_version))
+
+    def __get_latest_version(self):
+        """
+        Fetches the database version from the API.
+        """
+        self.latest_version = requests.get(ThreeDid.__version_url).content.decode('ascii')
+        self.__log.info('Latest version: {}'.format(self.latest_version))
+
+    def __save_new_version(self):
+        """
+        Saves the latest version into the current version text file.
+        """
+        with open(ThreeDid.__current_version_file, 'w') as f:
+            f.write(self.latest_version)
+        self.__log.info('Saved new version {} to file.'.format(self.latest_version))
+
+    def __download_archive(self):
+        """
+        Downloads the archive containing the DDI and saves it to disk.
+        """
+        self.__log.info('Downloading archive at {}'.format(ThreeDid.__archive_url))
+        archive = requests.get(ThreeDid.__archive_url)
+
+        self.__log.info('Saving archive to {}'.format(ThreeDid.__archive_filename))
+        with open(ThreeDid.__archive_filename, 'wb') as f:
+            f.write(archive.content)
+
+    def __extract_archive(self):
+        """
+        Extracts the DDI archive file.
+        """
+        self.__log.info('Extracting archive to {}'.format(ThreeDid.__ddi_filename))
+        with gzip.open(ThreeDid.__archive_filename, 'rb') as f_in:
+            with open(ThreeDid.__ddi_filename, 'wb') as f_out:
                 shutil.copyfileobj(f_in, f_out)
+        os.remove(ThreeDid.__archive_filename)
 
-    # import database into mysql
-    # db_cursor: opened database connection
-    def import_db(self, db_cursor):
+    def __fetch_interactions(self):
+        """
+        Creates DomainInteraction instances and adds them to the domain_interactions set.
+        """
 
-        # recreate database
-        db_cursor.execute('drop database if exists 3did')
-        db_cursor.execute('create database 3did')
+        with open(ThreeDid.__ddi_filename) as f:
+            for line in f:
+                res = re.match(r'^#=ID.*(PF\d{5})\.\d+@Pfam.*(PF\d{5})\.\d+@Pfam.*$', line)
+                if res is not None:
+                    domain_a, domain_b = res.groups()
+                    self.domain_interactions.add(DomainInteraction(domain_a, domain_b))
 
-        # import downloaded database
-        out = subprocess.check_output(['mysql', '-u', 'root', '--show-warnings', '-e', 'use 3did; source ' + ThreeDid.sql_filename + ';'])
-        print(out.decode())
+        os.remove(ThreeDid.__ddi_filename)
+        self.__log.info('{} domain interactions extracted.'.format(str(len(self.domain_interactions))))
 
-    def print_ddi(self, db_cursor):
+    def has_new_version(self):
+        """
+        :return: True if a new version of the database if available, false otherwise
+        """
+        self.__get_current_version()
+        self.__get_latest_version()
 
-        db_cursor.execute('use 3did')
+        if self.current_version == self.latest_version:
+            self.__log.info('No new version found.')
+            return False
+        else:
+            self.__log.info('New version found: {}.'.format(self.latest_version))
+            return True
 
-        sql = """select substring_index(d1.pfam_id, '.', 1),
-                        substring_index(d2.pfam_id, '.', 1)
-                   from ddi1
-                  inner join domain d1
-                     on ddi1.domain1 = d1.name
-                  inner join domain d2
-                     on ddi1.domain2 = d2.name;"""
-
-        db_cursor.execute(sql)
-        for d1, d2 in db_cursor.fetchall():
-            print('Domaine 1 : {}, domaine 2 : {}'.format(d1, d2))
+    def get_interactions(self):
+        """
+        Downloads the database and extracts the domain-domain interactions.
+        """
+        self.__download_archive()
+        self.__extract_archive()
+        self.__fetch_interactions()
+        if self.latest_version is not None:
+            self.__save_new_version()
